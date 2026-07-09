@@ -11,7 +11,12 @@ export type Profile = {
   group_id: number | null;
   start_weight: number | null;
   goal_weight: number | null;
+  solo: boolean;
+  share_weights: boolean;
 };
+
+const PROFILE_COLUMNS =
+  "id, name, color, group_id, start_weight, goal_weight, solo, share_weights";
 
 export async function getSessionUser() {
   const supabase = createClient();
@@ -23,10 +28,11 @@ export async function getSessionUser() {
 
 export async function getProfiles(): Promise<Profile[]> {
   const supabase = createClient();
+  // RLS가 "본인 + 같은 방"으로 제한하므로 추가 필터 불필요.
+  // 방이 없는 유저는 본인만 반환된다.
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, color, group_id, start_weight, goal_weight")
-    .not("group_id", "is", null)
+    .select(PROFILE_COLUMNS)
     .order("created_at");
   if (error) throw error;
   return data;
@@ -38,7 +44,7 @@ export async function getMyProfile(): Promise<Profile | null> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, color, group_id, start_weight, goal_weight")
+    .select(PROFILE_COLUMNS)
     .eq("id", user.id)
     .maybeSingle();
   if (error) throw error;
@@ -138,6 +144,30 @@ export async function saveWeight(iso: string, weight: number): Promise<void> {
       .update({ start_weight: round1(weight) })
       .eq("id", user.id);
   }
+}
+
+/** 방 없이 혼자 쓰기 시작 (온보딩에서 선택) */
+export async function startSolo(): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) throw new Error("로그인이 필요해요");
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ solo: true })
+    .eq("id", user.id);
+  if (error) throw error;
+}
+
+/** 기록 공유 on/off — 끄면 RLS가 방 멤버의 조회를 차단한다 */
+export async function updateShareWeights(share: boolean): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) throw new Error("로그인이 필요해요");
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ share_weights: share })
+    .eq("id", user.id);
+  if (error) throw error;
 }
 
 export async function updateName(name: string): Promise<void> {

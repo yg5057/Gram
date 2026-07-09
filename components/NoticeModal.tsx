@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 const NOTICE = {
   id: '2026-07-09',
   title: '업데이트 안내',
-  items: ['닉네임을 변경할 수 있어요 (내정보)', '방 멤버 목록을 확인할 수 있어요 (내정보)'],
+  items: ['닉네임을 변경할 수 있어요 (내정보)', '방 멤버 목록을 확인할 수 있어요 (내정보)', '방 없이 혼자서도 기록할 수 있어요', '기록 공유 해제 시 내 기록이 멤버에게 보이지 않아요 (내정보)'],
 };
 
 const STORAGE_KEY = 'gram-notice-dismissed';

@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createGroup, getMyProfile, joinGroup, signOut } from "@/lib/data";
+import {
+  createGroup,
+  getMyProfile,
+  joinGroup,
+  signOut,
+  startSolo,
+} from "@/lib/data";
 
 export default function WelcomePage() {
   const router = useRouter();
@@ -48,6 +54,19 @@ export default function WelcomePage() {
       router.replace("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "입장에 실패했어요");
+      setBusy(false);
+    }
+  }
+
+  async function handleSolo() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await startSolo();
+      router.replace("/");
+    } catch {
+      setError("잠시 후 다시 시도해주세요");
       setBusy(false);
     }
   }
@@ -145,6 +164,17 @@ export default function WelcomePage() {
           {error}
         </div>
       )}
+
+      <button
+        onClick={handleSolo}
+        disabled={busy || newCode != null}
+        className="mt-6 text-center text-sm font-bold text-sub underline underline-offset-4 disabled:opacity-40"
+      >
+        혼자 기록할래요
+      </button>
+      <div className="mt-1.5 text-center text-xs font-medium text-faint">
+        방은 나중에 내정보 화면에서 만들거나 입장할 수 있어요
+      </div>
 
       <button
         onClick={logout}

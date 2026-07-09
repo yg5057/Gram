@@ -24,6 +24,9 @@ const X1 = 310;
 const Y0 = 12;
 const Y1 = 178;
 
+// "기록 없는 멤버 숨기기" 설정 (기기별, 기본 꺼짐 = 모두 표시)
+const HIDE_INACTIVE_KEY = "gram-hide-inactive";
+
 export default function ComparePage() {
   const [period, setPeriod] = useState<Period>("week");
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -31,8 +34,17 @@ export default function ComparePage() {
   const [myId, setMyId] = useState<string | null>(null);
   // 탭한 날짜 인덱스 (툴팁 표시용)
   const [sel, setSel] = useState<number | null>(null);
+  const [hideInactive, setHideInactive] = useState(false);
+
+  function toggleHideInactive() {
+    setHideInactive((v) => {
+      localStorage.setItem(HIDE_INACTIVE_KEY, v ? "off" : "on");
+      return !v;
+    });
+  }
 
   useEffect(() => {
+    setHideInactive(localStorage.getItem(HIDE_INACTIVE_KEY) === "on");
     const since = addDaysISO(todayISO(), -29);
     Promise.all([getProfiles(), getAllWeights(since), getSessionUser()]).then(
       ([p, w, user]) => {
@@ -44,10 +56,16 @@ export default function ComparePage() {
   }, []);
 
   const days = period === "week" ? 7 : 30;
-  // 내 카드가 항상 맨 위
-  const ordered = [...profiles].sort(
-    (a, b) => Number(b.id === myId) - Number(a.id === myId),
-  );
+  // 숨기기 설정이 켜져 있으면 최근 30일 기록이 없는 멤버
+  // (공유를 끈 멤버 포함)는 숨긴다. 나는 항상 표시. 내 카드가 항상 맨 위.
+  const ordered = [...profiles]
+    .filter(
+      (p) =>
+        !hideInactive ||
+        p.id === myId ||
+        Object.keys(byMember[p.id] ?? {}).length > 0,
+    )
+    .sort((a, b) => Number(b.id === myId) - Number(a.id === myId));
   const seriesByMember = ordered.map((p) => ({
     profile: p,
     isMe: p.id === myId,
@@ -91,7 +109,7 @@ export default function ComparePage() {
           친구 비교
         </div>
         <div className="mt-1 text-sm font-medium text-sub">
-          최근 {days}일 · {profiles.length}명
+          최근 {days}일 · {ordered.length}명
         </div>
         <div className="mt-4 flex gap-2">
           {(
@@ -113,6 +131,14 @@ export default function ComparePage() {
               {label}
             </button>
           ))}
+          <button
+            onClick={toggleHideInactive}
+            className={`ml-auto rounded-full px-4 py-2 text-[13px] font-semibold ${
+              hideInactive ? "bg-main-light text-main-dark" : "bg-line text-sub"
+            }`}
+          >
+            기록 없는 멤버 숨김
+          </button>
         </div>
       </div>
 
