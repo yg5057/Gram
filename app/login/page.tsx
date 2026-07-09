@@ -31,13 +31,12 @@ export default function LoginPage() {
   return (
     <div className='flex flex-1 flex-col bg-white px-7 pt-[60px]'>
       <div className='mt-6 flex flex-col items-center gap-[18px]'>
-        <div className='flex h-[76px] w-[76px] items-center justify-center rounded-3xl bg-main shadow-[0_10px_24px_rgba(255,107,157,0.4)]'>
-          <svg width='40' height='40' viewBox='0 0 24 24' fill='none'>
-            <path d='M12 3.5c-4.7 0-8.5 3.4-8.5 7.6 0 2.5 1.4 4.7 3.5 6.1V21l3.2-1.8c.6.1 1.2.2 1.8.2 4.7 0 8.5-3.4 8.5-7.6S16.7 3.5 12 3.5Z' fill='#fff' />
-            <circle cx='9' cy='11' r='1.4' fill='#FF6B9D' />
-            <circle cx='15' cy='11' r='1.4' fill='#FF6B9D' />
-          </svg>
-        </div>
+        <svg width='84' height='84' viewBox='0 0 96 96' className='drop-shadow-[0_10px_24px_rgba(255,107,157,0.45)]'>
+          <rect x='8' y='6' width='80' height='74' rx='24' fill='#FF6B9D' />
+          <path d='M24 72 L18 90 Q17 94 22 92 L42 79 Z' fill='#FF6B9D' />
+          <path d='M36 42 v-6 a12 12 0 0 1 24 0 v6' fill='none' stroke='#fff' strokeWidth='7.5' strokeLinecap='round' />
+          <path d='M48 38 c-13.5 0 -20.5 8 -20.5 17 0 6.5 3.5 11.5 8.5 14.5 h24 c5 -3 8.5 -8 8.5 -14.5 0 -9 -7 -17 -20.5 -17 Z' fill='#fff' />
+        </svg>
         <div className='text-center'>
           <div className='text-[27px] font-extrabold tracking-[-0.5px]'>Gram</div>
           <div className='mt-1.5 text-[15px] font-medium text-sub'>친구들과 함께 기록하는 몸무게</div>
