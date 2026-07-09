@@ -29,6 +29,8 @@ export default function ComparePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [byMember, setByMember] = useState<Record<string, WeightMap>>({});
   const [myId, setMyId] = useState<string | null>(null);
+  // 탭한 날짜 인덱스 (툴팁 표시용)
+  const [sel, setSel] = useState<number | null>(null);
 
   useEffect(() => {
     const since = addDaysISO(todayISO(), -29);
@@ -67,6 +69,20 @@ export default function ComparePage() {
 
   const axisDays = seriesFor({}, days);
 
+  // 툴팁에 넣을 선택 날짜의 멤버별 값
+  const selRows =
+    sel == null
+      ? []
+      : seriesByMember
+          .map(({ profile, series }) => ({
+            profile,
+            weight: series[sel]?.weight ?? null,
+          }))
+          .filter(
+            (r): r is { profile: Profile; weight: number } => r.weight != null,
+          );
+  const selDate = sel == null ? null : fromISO(axisDays[sel].iso);
+
   return (
     <div>
       {/* 헤더 + 기간 토글 */}
@@ -86,7 +102,10 @@ export default function ComparePage() {
           ).map(([key, label]) => (
             <button
               key={key}
-              onClick={() => setPeriod(key)}
+              onClick={() => {
+                setPeriod(key);
+                setSel(null);
+              }}
               className={`rounded-full px-4 py-2 text-[13px] font-semibold ${
                 period === key ? "bg-ink text-white" : "bg-line text-sub"
               }`}
@@ -98,8 +117,19 @@ export default function ComparePage() {
       </div>
 
       {/* 라인차트 */}
-      <div className="bg-white px-4 pb-5">
+      <div className="relative bg-white px-4 pb-5">
         <svg viewBox="0 0 330 210" className="h-auto w-full">
+          {sel != null && (
+            <line
+              x1={x(sel)}
+              y1={Y0 - 4}
+              x2={x(sel)}
+              y2={Y1 + 2}
+              stroke="#D0D5DB"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+          )}
           <line x1={X0} y1={Y0 - 2} x2={X0} y2={Y1 + 2} stroke="#F1F3F5" />
           <line x1={X0} y1={Y1 + 2} x2={X1 + 10} y2={Y1 + 2} stroke="#F1F3F5" />
           <line
@@ -152,7 +182,8 @@ export default function ComparePage() {
                   </text>
                 );
               }
-              if (i % 7 !== 0 && i !== days - 1) return null;
+              // 마지막 날 기준 7일 간격 → 마지막 라벨과 겹치지 않는다
+              if ((days - 1 - i) % 7 !== 0) return null;
               return (
                 <text key={p.iso} x={x(i)} y="200">
                   {d.getMonth() + 1}/{d.getDate()}
@@ -160,7 +191,73 @@ export default function ComparePage() {
               );
             })}
           </g>
+
+          {/* 선택 날짜의 값 강조 */}
+          {sel != null &&
+            selRows.map(({ profile, weight }) => (
+              <circle
+                key={profile.id}
+                cx={x(sel)}
+                cy={y(weight)}
+                r="4.5"
+                fill={profile.color}
+                stroke="#fff"
+                strokeWidth="1.5"
+              />
+            ))}
+
+          {/* 날짜별 탭 영역 */}
+          {axisDays.map((p, i) => {
+            const colW = (X1 - X0) / (days - 1);
+            return (
+              <rect
+                key={p.iso}
+                x={x(i) - colW / 2}
+                y="0"
+                width={colW}
+                height="195"
+                fill="transparent"
+                onClick={() => setSel(sel === i ? null : i)}
+              />
+            );
+          })}
         </svg>
+
+        {/* 툴팁 */}
+        {sel != null && selDate != null && (
+          <div
+            className="pointer-events-none absolute top-2 z-10 -translate-x-1/2 rounded-xl border border-line bg-white px-3.5 py-2.5 shadow-[0_6px_20px_rgba(25,31,40,0.12)]"
+            style={{
+              left: `${Math.min(78, Math.max(22, (x(sel) / 330) * 100))}%`,
+            }}
+          >
+            <div className="text-[11px] font-semibold whitespace-nowrap text-faint">
+              {selDate.getMonth() + 1}월 {selDate.getDate()}일 (
+              {WEEKDAYS[selDate.getDay()]})
+            </div>
+            {selRows.length === 0 ? (
+              <div className="mt-1 text-xs font-medium whitespace-nowrap text-sub">
+                기록 없음
+              </div>
+            ) : (
+              selRows.map(({ profile, weight }) => (
+                <div
+                  key={profile.id}
+                  className="mt-1 flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <span
+                    className="h-2 w-2 rounded-[3px]"
+                    style={{ background: profile.color }}
+                  />
+                  <span className="text-xs font-semibold">{profile.name}</span>
+                  <span className="text-xs font-extrabold">
+                    {weight.toFixed(1)}kg
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* 구성원 리스트 */}
