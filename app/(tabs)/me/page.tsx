@@ -11,6 +11,7 @@ import {
   getSessionUser,
   signOut,
   updateGoal,
+  updateName,
   type Profile,
 } from "@/lib/data";
 
@@ -19,12 +20,14 @@ export default function MePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [email, setEmail] = useState("");
   const [weights, setWeights] = useState<WeightMap>({});
-  const [memberCount, setMemberCount] = useState(1);
+  const [members, setMembers] = useState<Profile[]>([]);
   const [groupCode, setGroupCode] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
-  const [alarmOn, setAlarmOn] = useState(true);
+  const [showMembers, setShowMembers] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -36,7 +39,7 @@ export default function MePage() {
     ]).then(([p, w, all, user, code]) => {
       setProfile(p);
       setWeights(w);
-      setMemberCount(Math.max(1, all.length));
+      setMembers(all);
       setEmail(user?.email ?? "");
       setGroupCode(code);
     });
@@ -64,6 +67,17 @@ export default function MePage() {
       : 0;
   const recordDays = Object.keys(weights).length;
   const streak = streakOf(weights);
+
+  async function saveName() {
+    const v = nameInput.trim();
+    if (!v) return;
+    await updateName(v);
+    setProfile((p) => (p ? { ...p, name: v } : p));
+    setMembers((ms) =>
+      ms.map((m) => (m.id === profile?.id ? { ...m, name: v } : m)),
+    );
+    setEditingName(false);
+  }
 
   async function saveGoal() {
     const v = Number(goalInput);
@@ -165,6 +179,21 @@ export default function MePage() {
         <div className="overflow-hidden rounded-[20px] border border-line bg-white">
           <button
             onClick={() => {
+              setNameInput(profile?.name ?? "");
+              setEditingName(true);
+            }}
+            className="flex w-full items-center gap-3.5 border-b border-hair px-5 py-4"
+          >
+            <div className="text-lg">✏️</div>
+            <div className="flex-1 text-left text-[15px] font-semibold">
+              닉네임 변경
+            </div>
+            <span className="text-sm font-semibold text-faint">
+              {profile?.name ?? ""} ›
+            </span>
+          </button>
+          <button
+            onClick={() => {
               setGoalInput(goal != null ? String(goal) : "");
               setEditingGoal(true);
             }}
@@ -178,16 +207,21 @@ export default function MePage() {
               {goal != null ? `${goal.toFixed(1)}kg ` : ""}›
             </span>
           </button>
-          <div className="flex items-center gap-3.5 border-b border-hair px-5 py-4">
+          <button
+            onClick={() => setShowMembers(true)}
+            className="flex w-full items-center gap-3.5 border-b border-hair px-5 py-4"
+          >
             <div className="text-lg">👥</div>
-            <div className="flex-1 text-[15px] font-semibold">방 멤버</div>
+            <div className="flex-1 text-left text-[15px] font-semibold">
+              방 멤버
+            </div>
             <span className="text-sm font-semibold text-faint">
-              {memberCount}/8명
+              {Math.max(1, members.length)}/8명 ›
             </span>
-          </div>
+          </button>
           <button
             onClick={copyGroupCode}
-            className="flex w-full items-center gap-3.5 border-b border-hair px-5 py-4"
+            className="flex w-full items-center gap-3.5 px-5 py-4"
           >
             <div className="text-lg">✉️</div>
             <div className="flex-1 text-left text-[15px] font-semibold">
@@ -201,22 +235,6 @@ export default function MePage() {
               {codeCopied ? "복사됨!" : (groupCode ?? "—")}
             </span>
           </button>
-          <div className="flex items-center gap-3.5 px-5 py-4">
-            <div className="text-lg">🔔</div>
-            <div className="flex-1 text-[15px] font-semibold">기록 알림</div>
-            <button
-              onClick={() => setAlarmOn((v) => !v)}
-              className={`relative h-[26px] w-11 rounded-full transition-colors ${
-                alarmOn ? "bg-main" : "bg-line-strong"
-              }`}
-            >
-              <span
-                className={`absolute top-[3px] h-5 w-5 rounded-full bg-white transition-all ${
-                  alarmOn ? "right-[3px]" : "left-[3px]"
-                }`}
-              />
-            </button>
-          </div>
         </div>
 
         <button
@@ -226,6 +244,46 @@ export default function MePage() {
           로그아웃
         </button>
       </div>
+
+      {/* 방 멤버 목록 */}
+      {showMembers && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40"
+          onClick={() => setShowMembers(false)}
+        >
+          <div
+            className="w-full max-w-[430px] rounded-t-[24px] bg-white p-6 pb-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-lg font-bold">방 멤버</div>
+              <div className="text-sm font-semibold text-faint">
+                {Math.max(1, members.length)}/8명
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col">
+              {members.map((m) => (
+                <div key={m.id} className="flex items-center gap-3.5 py-3">
+                  <div
+                    className="flex h-11 w-11 items-center justify-center rounded-[16px] text-base font-extrabold text-white"
+                    style={{ background: m.color }}
+                  >
+                    {m.name?.[0] ?? ""}
+                  </div>
+                  <div className="flex-1 text-[15px] font-semibold">
+                    {m.name}
+                  </div>
+                  {m.id === profile?.id && (
+                    <span className="rounded-full bg-main-light px-2.5 py-1 text-xs font-bold text-main">
+                      나
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 목표 설정 모달 */}
       {editingGoal && (
@@ -255,6 +313,39 @@ export default function MePage() {
             <button
               onClick={saveGoal}
               disabled={!goalInput || Number(goalInput) <= 0}
+              className="mt-6 h-14 w-full rounded-2xl bg-main text-[17px] font-bold text-white disabled:bg-mute"
+            >
+              저장하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 닉네임 변경 모달 */}
+      {editingName && (
+        <div
+          className="fixed inset-0 z-20 flex items-end justify-center bg-black/40"
+          onClick={() => setEditingName(false)}
+        >
+          <div
+            className="w-full max-w-[430px] rounded-t-[24px] bg-white p-6 pb-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-lg font-bold">닉네임 변경</div>
+            <div className="mt-5 border-b-2 border-main pb-3">
+              <input
+                type="text"
+                maxLength={6}
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="닉네임 (최대 6자)"
+                autoFocus
+                className="w-full bg-transparent text-3xl font-extrabold outline-none placeholder:text-mute"
+              />
+            </div>
+            <button
+              onClick={saveName}
+              disabled={!nameInput.trim()}
               className="mt-6 h-14 w-full rounded-2xl bg-main text-[17px] font-bold text-white disabled:bg-mute"
             >
               저장하기

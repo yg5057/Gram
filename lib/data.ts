@@ -140,6 +140,17 @@ export async function saveWeight(iso: string, weight: number): Promise<void> {
   }
 }
 
+export async function updateName(name: string): Promise<void> {
+  const user = await getSessionUser();
+  if (!user) throw new Error("로그인이 필요해요");
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ name: name.trim() })
+    .eq("id", user.id);
+  if (error) throw error;
+}
+
 export async function updateGoal(goal: number): Promise<void> {
   const user = await getSessionUser();
   if (!user) throw new Error("로그인이 필요해요");
