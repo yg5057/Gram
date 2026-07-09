@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { daysInMonth, firstWeekday, todayISO } from "@/lib/date";
 import { deltaFor, type WeightMap } from "@/lib/weights";
 import { getMyWeights } from "@/lib/data";
@@ -44,13 +45,21 @@ export default function CalendarHome() {
           <div className="text-[22px] font-extrabold tracking-[-0.5px]">
             {month}월
           </div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-sub">
-            <button onClick={() => moveMonth(-1)} className="px-2 py-1">
-              ＜
+          <div className="flex items-center gap-1 text-sm font-semibold text-sub">
+            <button
+              onClick={() => moveMonth(-1)}
+              aria-label="이전 달"
+              className="rounded-lg p-1.5 active:bg-page"
+            >
+              <ChevronLeft size={18} strokeWidth={2.5} />
             </button>
             <span>{year}</span>
-            <button onClick={() => moveMonth(1)} className="px-2 py-1">
-              ＞
+            <button
+              onClick={() => moveMonth(1)}
+              aria-label="다음 달"
+              className="rounded-lg p-1.5 active:bg-page"
+            >
+              <ChevronRight size={18} strokeWidth={2.5} />
             </button>
           </div>
         </div>
